@@ -53,13 +53,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ios, macos]
+        platform: [macos]
     steps:
       - name: Checkout private repository
         uses: actions/checkout@v7
         with:
           repository: ${{ env.PRIVATE_REPO }}
           token: ${{ secrets.ORG_TOKEN }}
+          ref: b6d56dbb819dd330fd1d0f0706c16c98a78c64d5
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -84,23 +85,7 @@ jobs:
 
       - name: Set build environment
         run: |
-          set -xeuo pipefail
-          echo "BUILD_VERSION=${{ inputs.version }}" >> "${GITHUB_ENV}"
-          # Derive the build number exactly the way build-android.yml derives
-          # versionCode, so one release carries ONE number on all four
-          # platforms. Both Info.plists read $(FLUTTER_BUILD_NUMBER), which
-          # Flutter reads from pubspec, so rewriting pubspec is enough -- no
-          # need to thread --build-number through the ipa and macos commands.
-          # Without this the Apple side used whatever counter pubspec happened
-          # to carry, and 1.2.8 shipped as 128 on Android but 30 on iOS.
-          # NOTE: this job is macos-latest, so that is BSD sed -- `-i ''`.
-          VERSION="${{ inputs.version }}"
-          VERSION="${VERSION#v}"
-          VERSION="${VERSION%%+*}"
-          IFS='.' read -r a b c <<< "$VERSION"
-          BUILD_NUMBER=$((a * 100 + b * 10 + c))
-          sed -i '' "s/^version: .*/version: ${VERSION}+${BUILD_NUMBER}/" pubspec.yaml
-          echo "Apple build number: ${BUILD_NUMBER}"
+          echo "BUILD_VERSION=${{ inputs.version }}" >> "$GITHUB_ENV"
       - name: Install Flutter dependencies
         run: |
           flutter pub get
@@ -184,6 +169,18 @@ jobs:
       # CFBundleDisplayName are written with plutil instead of PlistBuddy and
       # read back, and every path built from it is quoted.
       #
+      - name: Verify packaged loading artwork
+        run: |
+          set -euo pipefail
+          APP_PATH=$(ls -d build/macos/Build/Products/Release/*.app)
+          ASSET_PATH="$APP_PATH/Contents/Frameworks/App.framework/Resources/flutter_assets/assets/brand-scene.png"
+          test -f "$ASSET_PATH"
+          ACTUAL=$(shasum -a 256 "$ASSET_PATH" | awk '{print $1}')
+          test "$ACTUAL" = "279b5864e47a8843e5d170dbe2f51bcd339bfb7493582fe1b3e4f70010a4d020"
+          /usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP_PATH/Contents/Info.plist"
+          /usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP_PATH/Contents/Info.plist"
+          echo "Loading artwork SHA-256: $ACTUAL"
+
       # ── Notarized DMG for distribution OUTSIDE the App Store ────────────────
       # The .pkg this workflow already builds is signed "3rd Party Mac Developer
       # Installer" -- that is a Mac App Store SUBMISSION format. A user who

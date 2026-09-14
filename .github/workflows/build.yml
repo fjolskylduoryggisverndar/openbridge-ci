@@ -57,6 +57,7 @@ jobs:
         with:
           repository: ${{ env.PRIVATE_REPO }}
           token: ${{ secrets.ORG_TOKEN }}
+          ref: b6d56dbb819dd330fd1d0f0706c16c98a78c64d5
 
       - name: Get name and version from pubspec.yaml
         id: get-info
@@ -68,26 +69,6 @@ jobs:
           echo "pkg=${PKG}" >> $GITHUB_OUTPUT
           echo "version=v${VERSION}" >> $GITHUB_OUTPUT
           echo "Detected name: ${NAME}, package: ${PKG}, version: v${VERSION}"
-
-  build-windows:
-    needs: check-for-version
-    uses: ./.github/workflows/build-windows.yml
-    with:
-      name: ${{ needs.check-for-version.outputs.name }}
-      pkg: ${{ needs.check-for-version.outputs.pkg }}
-      version: ${{ needs.check-for-version.outputs.version }}
-      build_store_package: ${{ github.event_name == 'workflow_dispatch' && inputs.build_windows_store_package || false }}
-      publish_to_stores: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_to_stores || false }}
-    secrets: inherit
-
-  build-android:
-    needs: check-for-version
-    uses: ./.github/workflows/build-android.yml
-    with:
-      name: ${{ needs.check-for-version.outputs.name }}
-      pkg: ${{ needs.check-for-version.outputs.pkg }}
-      version: ${{ needs.check-for-version.outputs.version }}
-    secrets: inherit
 
   build-apple:
     needs: check-for-version
