@@ -45,7 +45,7 @@ jobs:
         with:
           repository: ${{ env.PRIVATE_REPO }}
           token: ${{ secrets.ORG_TOKEN }}
-          ref: 54f6a60ba9d592b2688855de2a19751e83c0bddd
+          ref: d90582316dda1a8615c8dd1da2a9e8f5066cb1b8
 
       - name: Install Microsoft Store publisher CLI
         if: inputs.build_store_package || inputs.publish_to_stores
@@ -110,10 +110,14 @@ jobs:
       - name: Verify packaged loading artwork
         shell: pwsh
         run: |
-          $asset = "build/windows/x64/runner/Release/data/flutter_assets/assets/brand-scene.png"
+          $asset = "build/windows/x64/runner/Release/data/flutter_assets/assets/loading-scene.webp"
           $actual = (Get-FileHash $asset -Algorithm SHA256).Hash.ToLower()
-          if ($actual -ne "279b5864e47a8843e5d170dbe2f51bcd339bfb7493582fe1b3e4f70010a4d020") { throw "Loading artwork does not match source" }
-          Write-Output "Verified loading artwork SHA-256: $actual"
+          if ($actual -ne "36c3569d6001671058decad5ba6372a5c02a9d6509be6497800bb584794a2641") { throw "loading-scene.webp does not match source" }
+          Write-Output "Verified loading-scene.webp SHA-256: $actual"
+          $asset = "build/windows/x64/runner/Release/data/flutter_assets/assets/loading-portrait.webp"
+          $actual = (Get-FileHash $asset -Algorithm SHA256).Hash.ToLower()
+          if ($actual -ne "852f721e67e2fcd3fd4214731a49bda212dd1fbc443542b81525a730c6a0d403") { throw "loading-portrait.webp does not match source" }
+          Write-Output "Verified loading-portrait.webp SHA-256: $actual"
 
       - name: Bundle the VC++ runtime beside the exe
         shell: pwsh
