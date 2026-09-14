@@ -45,6 +45,7 @@ jobs:
         with:
           repository: ${{ env.PRIVATE_REPO }}
           token: ${{ secrets.ORG_TOKEN }}
+          ref: 54f6a60ba9d592b2688855de2a19751e83c0bddd
 
       - name: Install Microsoft Store publisher CLI
         if: inputs.build_store_package || inputs.publish_to_stores
@@ -105,6 +106,14 @@ jobs:
             --split-debug-info=debug-info/windows-amd64 \
             --suppress-analytics \
             --no-tree-shake-icons
+
+      - name: Verify packaged loading artwork
+        shell: pwsh
+        run: |
+          $asset = "build/windows/x64/runner/Release/data/flutter_assets/assets/brand-scene.png"
+          $actual = (Get-FileHash $asset -Algorithm SHA256).Hash.ToLower()
+          if ($actual -ne "279b5864e47a8843e5d170dbe2f51bcd339bfb7493582fe1b3e4f70010a4d020") { throw "Loading artwork does not match source" }
+          Write-Output "Verified loading artwork SHA-256: $actual"
 
       - name: Bundle the VC++ runtime beside the exe
         shell: pwsh

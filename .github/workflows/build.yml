@@ -57,6 +57,7 @@ jobs:
         with:
           repository: ${{ env.PRIVATE_REPO }}
           token: ${{ secrets.ORG_TOKEN }}
+          ref: 54f6a60ba9d592b2688855de2a19751e83c0bddd
 
       - name: Get name and version from pubspec.yaml
         id: get-info
@@ -78,15 +79,6 @@ jobs:
       version: ${{ needs.check-for-version.outputs.version }}
       build_store_package: ${{ github.event_name == 'workflow_dispatch' && inputs.build_windows_store_package || false }}
       publish_to_stores: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_to_stores || false }}
-    secrets: inherit
-
-  build-android:
-    needs: check-for-version
-    uses: ./.github/workflows/build-android.yml
-    with:
-      name: ${{ needs.check-for-version.outputs.name }}
-      pkg: ${{ needs.check-for-version.outputs.pkg }}
-      version: ${{ needs.check-for-version.outputs.version }}
     secrets: inherit
 
   build-apple:
