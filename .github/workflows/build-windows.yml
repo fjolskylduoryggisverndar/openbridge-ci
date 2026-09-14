@@ -45,6 +45,7 @@ jobs:
         with:
           repository: ${{ env.PRIVATE_REPO }}
           token: ${{ secrets.ORG_TOKEN }}
+          ref: b6d56dbb819dd330fd1d0f0706c16c98a78c64d5
 
       - name: Install Microsoft Store publisher CLI
         if: inputs.build_store_package || inputs.publish_to_stores
@@ -167,6 +168,7 @@ jobs:
       # OLD release uploads its object but never repoints dl.* backwards.
       # Source of truth: XTPU/cloudflare/ci-r2-upload-step.yml.
       - name: Publish to R2 (dl.<brand> direct downloads)
+        if: false
         continue-on-error: true
         timeout-minutes: 30
         shell: bash

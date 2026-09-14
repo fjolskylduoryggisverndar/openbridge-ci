@@ -70,17 +70,14 @@ jobs:
           echo "version=v${VERSION}" >> $GITHUB_OUTPUT
           echo "Detected name: ${NAME}, package: ${PKG}, version: v${VERSION}"
 
-  build-apple:
+  build-windows:
     needs: check-for-version
-    uses: ./.github/workflows/build-apple.yml
+    uses: ./.github/workflows/build-windows.yml
     with:
       name: ${{ needs.check-for-version.outputs.name }}
       pkg: ${{ needs.check-for-version.outputs.pkg }}
       version: ${{ needs.check-for-version.outputs.version }}
+      build_store_package: ${{ github.event_name == 'workflow_dispatch' && inputs.build_windows_store_package || false }}
       publish_to_stores: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_to_stores || false }}
-      publish_ios_testflight: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_ios_testflight || false }}
-      publish_macos_testflight: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_macos_testflight || false }}
-      # [2026-09-11 buddhajump-ci parity] ported from buddhajump-ci build.yml.
-      # [2026-09-09 v1.7.5] repository_dispatch (pubspec bump) runs get the default.
-      dmg_tunnel: ${{ github.event_name == 'workflow_dispatch' && inputs.dmg_tunnel || 'sysex' }}
     secrets: inherit
+
