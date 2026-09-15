@@ -304,9 +304,18 @@ jobs:
           # zip), Solid at 9.8 KB (415 KB) and MaterialIcons at 11.6 KB (1.6 MB):
           # Alipay / WeChat / Visa / MC / Amex and the connect-state icons
           # rendered as tofu boxes in 1.8.2 and 1.8.3 MSIX builds.
+          # [2026-09-16 store-elevation] allowElevation added to -e below. The app
+          # relaunches itself elevated (ShellExecuteEx "runas") because creating the
+          # WinTUN adapter needs Administrator; inside an MSIX package Windows refuses
+          # that relaunch unless the package declares this restricted capability, so
+          # every Store build so far could only answer "service permission required"
+          # on connect. Restricted capability: Partner Center asks for a
+          # justification and Microsoft wants reportapp@microsoft.com contacted in
+          # advance (project/fjolsky/WINDOWS-STORE-ELEVATION-2026-09-16/). was:
+          #   -e "internetClient, privateNetworkClientServer" \
           dart run msix:create \
             --build-windows false \
-            -e "internetClient, privateNetworkClientServer" \
+            -e "internetClient, privateNetworkClientServer, allowElevation" \
             -d "${DISPLAY_NAME}" \
             -l "assets/logo.png" \
             -u "${{ secrets.PARTNER_COMPANY }}" \
