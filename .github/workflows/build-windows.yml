@@ -45,7 +45,7 @@ jobs:
         with:
           repository: ${{ env.PRIVATE_REPO }}
           token: ${{ secrets.ORG_TOKEN }}
-          ref: d90582316dda1a8615c8dd1da2a9e8f5066cb1b8
+          ref: 212eb8d69a4789bfea7216f51e02f40e6fad3a8c
 
       - name: Install Microsoft Store publisher CLI
         if: inputs.build_store_package || inputs.publish_to_stores
@@ -118,6 +118,18 @@ jobs:
           $actual = (Get-FileHash $asset -Algorithm SHA256).Hash.ToLower()
           if ($actual -ne "852f721e67e2fcd3fd4214731a49bda212dd1fbc443542b81525a730c6a0d403") { throw "loading-portrait.webp does not match source" }
           Write-Output "Verified loading-portrait.webp SHA-256: $actual"
+          $asset = "build/windows/x64/runner/Release/data/flutter_assets/assets/brand-scene.png"
+          $actual = (Get-FileHash $asset -Algorithm SHA256).Hash.ToLower()
+          if ($actual -ne "279b5864e47a8843e5d170dbe2f51bcd339bfb7493582fe1b3e4f70010a4d020") { throw "brand-scene.png does not match source" }
+          Write-Output "Verified brand-scene.png SHA-256: $actual"
+          $asset = "build/windows/x64/runner/Release/data/flutter_assets/assets/openbridge/bridge_open.webp"
+          $actual = (Get-FileHash $asset -Algorithm SHA256).Hash.ToLower()
+          if ($actual -ne "70c90798f73224b2cf49331b459ec88da02f1edf32982ec0f8092bfaa7683c16") { throw "openbridge/bridge_open.webp does not match source" }
+          Write-Output "Verified openbridge/bridge_open.webp SHA-256: $actual"
+          $asset = "build/windows/x64/runner/Release/data/flutter_assets/assets/openbridge/bridge_connected.webp"
+          $actual = (Get-FileHash $asset -Algorithm SHA256).Hash.ToLower()
+          if ($actual -ne "b4e98a351a8d8d328b5ba14e191e8e1ecec72bbf4670fa10495891fdb45083cd") { throw "openbridge/bridge_connected.webp does not match source" }
+          Write-Output "Verified openbridge/bridge_connected.webp SHA-256: $actual"
 
       - name: Bundle the VC++ runtime beside the exe
         shell: pwsh
