@@ -53,7 +53,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [macos]
+        platform: [ios, macos]
     steps:
       - name: Checkout private repository
         uses: actions/checkout@v7
@@ -207,33 +207,29 @@ jobs:
       # builds no DMG at all.
       - name: Verify packaged app version and artwork
         run: |
-          set -euo pipefail
-          APP_PATH=$(ls -d build/macos/Build/Products/Release/*.app)
-          ACTUAL_VERSION=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP_PATH/Contents/Info.plist")
-          ACTUAL_BUILD=$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP_PATH/Contents/Info.plist")
-          test "$ACTUAL_VERSION" = "1.8.17"
-          test "$ACTUAL_BUILD" = "202"
-          echo "Verified app version: $ACTUAL_VERSION ($ACTUAL_BUILD)"
-          ASSET_PATH="$APP_PATH/Contents/Frameworks/App.framework/Resources/flutter_assets/assets/loading-scene.webp"
-          ACTUAL=$(shasum -a 256 "$ASSET_PATH" | awk '{print $1}')
-          test "$ACTUAL" = "36c3569d6001671058decad5ba6372a5c02a9d6509be6497800bb584794a2641"
-          echo "Verified loading-scene.webp SHA-256: $ACTUAL"
-          ASSET_PATH="$APP_PATH/Contents/Frameworks/App.framework/Resources/flutter_assets/assets/loading-portrait.webp"
-          ACTUAL=$(shasum -a 256 "$ASSET_PATH" | awk '{print $1}')
-          test "$ACTUAL" = "852f721e67e2fcd3fd4214731a49bda212dd1fbc443542b81525a730c6a0d403"
-          echo "Verified loading-portrait.webp SHA-256: $ACTUAL"
-          ASSET_PATH="$APP_PATH/Contents/Frameworks/App.framework/Resources/flutter_assets/assets/brand-scene.png"
-          ACTUAL=$(shasum -a 256 "$ASSET_PATH" | awk '{print $1}')
-          test "$ACTUAL" = "279b5864e47a8843e5d170dbe2f51bcd339bfb7493582fe1b3e4f70010a4d020"
-          echo "Verified brand-scene.png SHA-256: $ACTUAL"
-          ASSET_PATH="$APP_PATH/Contents/Frameworks/App.framework/Resources/flutter_assets/assets/openbridge/bridge_open.webp"
-          ACTUAL=$(shasum -a 256 "$ASSET_PATH" | awk '{print $1}')
-          test "$ACTUAL" = "70c90798f73224b2cf49331b459ec88da02f1edf32982ec0f8092bfaa7683c16"
-          echo "Verified openbridge/bridge_open.webp SHA-256: $ACTUAL"
-          ASSET_PATH="$APP_PATH/Contents/Frameworks/App.framework/Resources/flutter_assets/assets/openbridge/bridge_connected.webp"
-          ACTUAL=$(shasum -a 256 "$ASSET_PATH" | awk '{print $1}')
-          test "$ACTUAL" = "b4e98a351a8d8d328b5ba14e191e8e1ecec72bbf4670fa10495891fdb45083cd"
-          echo "Verified openbridge/bridge_connected.webp SHA-256: $ACTUAL"
+          python3 - '${{ matrix.platform }}' '${{ inputs.version }}' <<'PY'
+          import hashlib, pathlib, plistlib, sys
+          platform, version = sys.argv[1:]
+          expected_version, expected_build = version.lstrip('v').split('+')
+          if platform == 'macos':
+              apps = list(pathlib.Path('build/macos/Build/Products/Release').glob('*.app'))
+              info_relative = 'Contents/Info.plist'
+              assets_relative = 'Contents/Frameworks/App.framework/Resources/flutter_assets/assets'
+          else:
+              apps = list(pathlib.Path('build/ios/archive').glob('*.xcarchive/Products/Applications/*.app'))
+              info_relative = 'Info.plist'
+              assets_relative = 'Frameworks/App.framework/flutter_assets/assets'
+          assert len(apps) == 1, apps
+          info = plistlib.loads((apps[0] / info_relative).read_bytes())
+          assert info['CFBundleShortVersionString'] == expected_version, info['CFBundleShortVersionString']
+          assert info['CFBundleVersion'] == expected_build, info['CFBundleVersion']
+          print(f'Verified app version: {expected_version} ({expected_build})')
+          expected_assets = {'loading-scene.webp': '36c3569d6001671058decad5ba6372a5c02a9d6509be6497800bb584794a2641', 'loading-portrait.webp': '852f721e67e2fcd3fd4214731a49bda212dd1fbc443542b81525a730c6a0d403', 'brand-scene.png': '279b5864e47a8843e5d170dbe2f51bcd339bfb7493582fe1b3e4f70010a4d020', 'openbridge/bridge_open.webp': '70c90798f73224b2cf49331b459ec88da02f1edf32982ec0f8092bfaa7683c16', 'openbridge/bridge_connected.webp': 'b4e98a351a8d8d328b5ba14e191e8e1ecec72bbf4670fa10495891fdb45083cd'}
+          for name, expected in expected_assets.items():
+              actual = hashlib.sha256((apps[0] / assets_relative / name).read_bytes()).hexdigest()
+              assert actual == expected, name
+              print(f'Verified {name} SHA-256: {actual}')
+          PY
 
       - name: Build notarized DMG (macOS direct distribution)
         if: matrix.platform == 'macos'
@@ -664,7 +660,7 @@ jobs:
       # can never skip the .pkg/.ipa upload, but the run must still go red and
       # nothing reaches R2/GitHub for macOS direct download (DMG_PATH stays empty).
       - name: Fail the job if the DMG step failed
-        if: always() && matrix.platform == 'macos' && steps.dmg.outcome == 'failure'
+        if: always() && matrix.platform == 'macos' && inputs.dmg_tunnel != 'skip' && (steps.dmg.outcome == 'failure' || env.DMG_PATH == '')
         run: |
           echo "::error::'Build notarized DMG' failed (system-extension build/assembly, profiles, signing or verification). No macOS DMG was published."
           exit 1
