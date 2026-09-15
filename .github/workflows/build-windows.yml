@@ -45,7 +45,7 @@ jobs:
         with:
           repository: ${{ env.PRIVATE_REPO }}
           token: ${{ secrets.ORG_TOKEN }}
-          ref: f2d076e60d7b507ec2c097942adc4a6cf57004c5
+          ref: 5e5ab2d0c13cde380a7f1e061c2040367e5f77dd
 
       - name: Install Microsoft Store publisher CLI
         if: inputs.build_store_package || inputs.publish_to_stores
